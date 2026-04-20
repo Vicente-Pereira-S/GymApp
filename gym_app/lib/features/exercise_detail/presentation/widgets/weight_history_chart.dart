@@ -1,20 +1,59 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:gym_app/app/theme/app_colors.dart';
+import 'package:gym_app/domain/entities/exercise_weight_entry.dart';
 
 class WeightHistoryChart extends StatelessWidget {
-  const WeightHistoryChart({super.key});
+  final List<ExerciseWeightEntry> entries;
+
+  const WeightHistoryChart({super.key, required this.entries});
 
   @override
   Widget build(BuildContext context) {
-    final List<FlSpot> spots = [
-      const FlSpot(0, 35),
-      const FlSpot(1, 37.5),
-      const FlSpot(2, 37.5),
-      const FlSpot(3, 40),
-      const FlSpot(4, 42.5),
-      const FlSpot(5, 45),
-    ];
+    if (entries.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Weight history',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            SizedBox(height: 14),
+            Text(
+              'No weight history yet.',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final sortedEntries = [...entries]
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final spots = <FlSpot>[];
+
+    for (int i = 0; i < sortedEntries.length; i++) {
+      spots.add(FlSpot(i.toDouble(), sortedEntries[i].weightKg));
+    }
+
+    final weights = sortedEntries.map((e) => e.weightKg).toList();
+    final minY = (weights.reduce((a, b) => a < b ? a : b) - 5).clamp(
+      0,
+      double.infinity,
+    );
+    final maxY = weights.reduce((a, b) => a > b ? a : b) + 5;
 
     return Container(
       width: double.infinity,
@@ -41,8 +80,9 @@ class WeightHistoryChart extends StatelessWidget {
             child: LineChart(
               LineChartData(
                 minX: 0,
-                maxX: 5,
-                minY: 0,
+                maxX: (spots.length - 1).toDouble(),
+                minY: minY.toDouble(),
+                maxY: maxY.toDouble(),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
@@ -63,7 +103,7 @@ class WeightHistoryChart extends StatelessWidget {
                       reservedSize: 34,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          value.toInt().toString(),
+                          value.toStringAsFixed(0),
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,
@@ -77,15 +117,16 @@ class WeightHistoryChart extends StatelessWidget {
                       showTitles: true,
                       reservedSize: 26,
                       getTitlesWidget: (value, meta) {
-                        final labels = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6'];
-                        final int index = value.toInt();
+                        final index = value.toInt();
 
-                        if (index < 0 || index >= labels.length) {
+                        if (index < 0 || index >= sortedEntries.length) {
                           return const SizedBox.shrink();
                         }
 
+                        final date = sortedEntries[index].date;
+
                         return Text(
-                          labels[index],
+                          '${date.day}/${date.month}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,

@@ -4,6 +4,7 @@ import 'package:gym_app/core/storage/local_storage_service.dart';
 import 'package:gym_app/domain/entities/completed_workout_day.dart';
 import 'package:gym_app/domain/entities/exercise.dart';
 import 'package:gym_app/domain/entities/exercise_draft_data.dart';
+import 'package:gym_app/domain/entities/exercise_weight_entry.dart';
 import 'package:gym_app/domain/entities/routine.dart';
 import 'package:gym_app/features/workout_state/state/workout_state.dart';
 
@@ -39,6 +40,14 @@ class WorkoutStateNotifier extends StateNotifier<WorkoutState> {
           weightKg: null,
           permanentNote: exercise.permanentNote,
         );
+  }
+
+  List<ExerciseWeightEntry> getWeightHistoryForExercise(String exerciseId) {
+    final entries =
+        state.weightHistoryByExercise[exerciseId] ??
+        const <ExerciseWeightEntry>[];
+    final sorted = [...entries]..sort((a, b) => a.date.compareTo(b.date));
+    return sorted;
   }
 
   bool isExerciseCompleted({
@@ -144,7 +153,8 @@ class WorkoutStateNotifier extends StateNotifier<WorkoutState> {
       return false;
     }
 
-    final DateTime today = DateTime.now();
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
     final bool alreadyCompletedToday = hasCompletedWorkoutOnDate(today);
 
     if (alreadyCompletedToday) {
@@ -154,21 +164,48 @@ class WorkoutStateNotifier extends StateNotifier<WorkoutState> {
     final List<CompletedWorkoutDay> updatedHistory = [
       ...state.completedWorkoutDays,
       CompletedWorkoutDay(
-        date: DateTime(today.year, today.month, today.day),
+        date: today,
         routineId: routine.id,
         routineName: routine.name,
       ),
     ];
 
+    final Map<String, List<ExerciseWeightEntry>> updatedWeightHistory = {
+      ...state.weightHistoryByExercise.map(
+        (key, value) => MapEntry(key, [...value]),
+      ),
+    };
+
+    for (final exercise in routine.exercises) {
+      final draft = getDraftForExercise(exercise);
+      final weight = draft.weightKg;
+
+      if (weight != null && weight > 0) {
+        final List<ExerciseWeightEntry> currentEntries = [
+          ...(updatedWeightHistory[exercise.id] ?? <ExerciseWeightEntry>[]),
+        ];
+
+        currentEntries.add(
+          ExerciseWeightEntry(
+            date: today,
+            exerciseId: exercise.id,
+            weightKg: weight,
+          ),
+        );
+
+        updatedWeightHistory[exercise.id] = currentEntries;
+      }
+    }
+
     final Map<String, Set<String>> updatedChecks = {
       ...state.completedExerciseIdsByRoutine,
     };
-
     updatedChecks.remove(routine.id);
 
     state = state.copyWith(
       completedWorkoutDays: updatedHistory,
       completedExerciseIdsByRoutine: updatedChecks,
+      weightHistoryByExercise: updatedWeightHistory,
     );
 
     await _persistState();

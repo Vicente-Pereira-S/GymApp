@@ -108,6 +108,12 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(workoutStateProvider);
+
+    final weightHistory = ref
+        .read(workoutStateProvider.notifier)
+        .getWeightHistoryForExercise(widget.exercise.id);
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(title: Text(widget.exercise.name)),
@@ -134,7 +140,7 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
                 focusNode: _noteFocusNode,
               ),
               const SizedBox(height: 16),
-              const WeightHistoryChart(),
+              WeightHistoryChart(entries: weightHistory),
             ],
           ),
         ),
