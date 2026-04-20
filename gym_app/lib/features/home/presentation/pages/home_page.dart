@@ -74,11 +74,24 @@ class HomePage extends ConsumerWidget {
 
   List<DateTime> _buildTwoWeekDates() {
     final DateTime today = DateTime.now();
-    final DateTime start = today.subtract(const Duration(days: 13));
+    final DateTime normalizedToday = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    );
+
+    final int daysFromMonday = normalizedToday.weekday - DateTime.monday;
+    final DateTime startOfCurrentWeek = normalizedToday.subtract(
+      Duration(days: daysFromMonday),
+    );
+
+    final DateTime startOfTwoWeekBlock = startOfCurrentWeek.subtract(
+      const Duration(days: 7),
+    );
 
     return List.generate(
       14,
-      (index) => DateTime(start.year, start.month, start.day + index),
+      (index) => startOfTwoWeekBlock.add(Duration(days: index)),
     );
   }
 }
