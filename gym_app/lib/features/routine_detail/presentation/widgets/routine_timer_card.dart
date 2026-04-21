@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:gym_app/app/theme/app_colors.dart';
+import 'package:gym_app/core/services/notification_service.dart';
 
 class RoutineTimerCard extends StatefulWidget {
   const RoutineTimerCard({super.key});
@@ -11,55 +13,117 @@ class RoutineTimerCard extends StatefulWidget {
 }
 
 class _RoutineTimerCardState extends State<RoutineTimerCard> {
-  Timer? _timer;
-  int _elapsedSeconds = 0;
+  Timer? _ticker;
+  AppLifecycleListener? _lifecycleListener;
+
   bool _isRunning = false;
+  DateTime? _startedAt;
+  int _accumulatedSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _lifecycleListener = AppLifecycleListener(
+      onResume: () {
+        if (mounted) {
+          setState(() {});
+          _startTickerIfNeeded();
+        }
+      },
+      onPause: () {
+        _stopTicker();
+      },
+      onInactive: () {
+        _stopTicker();
+      },
+      onDetach: () {
+        _stopTicker();
+      },
+    );
+  }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _stopTicker();
+    _lifecycleListener?.dispose();
     super.dispose();
   }
 
-  void _startTimer() {
+  int get _elapsedSeconds {
+    if (!_isRunning || _startedAt == null) {
+      return _accumulatedSeconds;
+    }
+
+    final int runningSeconds = DateTime.now().difference(_startedAt!).inSeconds;
+    return _accumulatedSeconds + runningSeconds;
+  }
+
+  void _startTickerIfNeeded() {
+    if (!_isRunning) {
+      return;
+    }
+
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  void _stopTicker() {
+    _ticker?.cancel();
+    _ticker = null;
+  }
+
+  Future<void> _startTimer() async {
     if (_isRunning) {
       return;
     }
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        _elapsedSeconds++;
-      });
-    });
+    _startedAt = DateTime.now();
+    _isRunning = true;
 
-    setState(() {
-      _isRunning = true;
-    });
+    setState(() {});
+    _startTickerIfNeeded();
+
+    await NotificationService.scheduleThreeMinuteAlert();
   }
 
-  void _stopTimer() {
-    _timer?.cancel();
+  Future<void> _stopTimer() async {
+    if (_isRunning && _startedAt != null) {
+      _accumulatedSeconds = _elapsedSeconds;
+    }
 
-    setState(() {
-      _isRunning = false;
-    });
+    _isRunning = false;
+    _startedAt = null;
+
+    _stopTicker();
+    setState(() {});
+
+    await NotificationService.cancelThreeMinuteAlert();
   }
 
-  void _resetTimer() {
-    _timer?.cancel();
+  Future<void> _resetTimer() async {
+    _isRunning = false;
+    _startedAt = null;
+    _accumulatedSeconds = 0;
 
-    setState(() {
-      _elapsedSeconds = 0;
-      _isRunning = false;
-    });
+    _stopTicker();
+    setState(() {});
+
+    await NotificationService.cancelThreeMinuteAlert();
   }
 
   Color _timerColor() {
-    if (_elapsedSeconds < 90) {
+    final elapsed = _elapsedSeconds;
+
+    if (elapsed < 90) {
       return AppColors.timerRed;
     }
 
-    if (_elapsedSeconds < 180) {
+    if (elapsed < 180) {
       return AppColors.timerYellow;
     }
 
@@ -70,10 +134,7 @@ class _RoutineTimerCardState extends State<RoutineTimerCard> {
     final int minutes = _elapsedSeconds ~/ 60;
     final int seconds = _elapsedSeconds % 60;
 
-    final String minutesText = minutes.toString().padLeft(2, '0');
-    final String secondsText = seconds.toString().padLeft(2, '0');
-
-    return '$minutesText:$secondsText';
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -147,7 +208,7 @@ class _RoutineTimerCardState extends State<RoutineTimerCard> {
 
 class _TimerButton extends StatelessWidget {
   final String label;
-  final VoidCallback onPressed;
+  final Future<void> Function() onPressed;
   final Color backgroundColor;
   final Color foregroundColor;
 
@@ -163,7 +224,9 @@ class _TimerButton extends StatelessWidget {
     return SizedBox(
       height: 46,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: () async {
+          await onPressed();
+        },
         style: ElevatedButton.styleFrom(
           elevation: 0,
           backgroundColor: backgroundColor,
