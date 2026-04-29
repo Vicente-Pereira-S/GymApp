@@ -1,168 +1,49 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym_app/app/theme/app_colors.dart';
-import 'package:gym_app/core/services/notification_service.dart';
+import 'package:gym_app/features/timer_state/providers/rest_timer_provider.dart';
 
-class RoutineTimerCard extends StatefulWidget {
+class RoutineTimerCard extends ConsumerWidget {
   const RoutineTimerCard({super.key});
 
   @override
-  State<RoutineTimerCard> createState() => _RoutineTimerCardState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final timerState = ref.watch(restTimerProvider);
+    final timerNotifier = ref.read(restTimerProvider.notifier);
 
-class _RoutineTimerCardState extends State<RoutineTimerCard> {
-  Timer? _ticker;
-  AppLifecycleListener? _lifecycleListener;
-
-  bool _isRunning = false;
-  DateTime? _startedAt;
-  int _accumulatedSeconds = 0;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _lifecycleListener = AppLifecycleListener(
-      onResume: () {
-        if (mounted) {
-          setState(() {});
-          _startTickerIfNeeded();
-        }
-      },
-      onPause: () {
-        _stopTicker();
-      },
-      onInactive: () {
-        _stopTicker();
-      },
-      onDetach: () {
-        _stopTicker();
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _stopTicker();
-    _lifecycleListener?.dispose();
-    super.dispose();
-  }
-
-  int get _elapsedSeconds {
-    if (!_isRunning || _startedAt == null) {
-      return _accumulatedSeconds;
-    }
-
-    final int runningSeconds = DateTime.now().difference(_startedAt!).inSeconds;
-    return _accumulatedSeconds + runningSeconds;
-  }
-
-  void _startTickerIfNeeded() {
-    if (!_isRunning) {
-      return;
-    }
-
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-  }
-
-  void _stopTicker() {
-    _ticker?.cancel();
-    _ticker = null;
-  }
-
-  Future<void> _startTimer() async {
-    if (_isRunning) {
-      return;
-    }
-
-    _startedAt = DateTime.now();
-    _isRunning = true;
-
-    setState(() {});
-    _startTickerIfNeeded();
-
-    await NotificationService.scheduleThreeMinuteAlert();
-  }
-
-  Future<void> _stopTimer() async {
-    if (_isRunning && _startedAt != null) {
-      _accumulatedSeconds = _elapsedSeconds;
-    }
-
-    _isRunning = false;
-    _startedAt = null;
-
-    _stopTicker();
-    setState(() {});
-
-    await NotificationService.cancelThreeMinuteAlert();
-  }
-
-  Future<void> _resetTimer() async {
-    _isRunning = false;
-    _startedAt = null;
-    _accumulatedSeconds = 0;
-
-    _stopTicker();
-    setState(() {});
-
-    await NotificationService.cancelThreeMinuteAlert();
-  }
-
-  Color _timerColor() {
-    final elapsed = _elapsedSeconds;
-
-    if (elapsed < 90) {
-      return AppColors.timerRed;
-    }
-
-    if (elapsed < 180) {
-      return AppColors.timerYellow;
-    }
-
-    return AppColors.timerGreen;
-  }
-
-  String _formattedTime() {
-    final int minutes = _elapsedSeconds ~/ 60;
-    final int seconds = _elapsedSeconds % 60;
-
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Color activeColor = _timerColor();
+    final int elapsedMilliseconds = timerState.elapsedMilliseconds();
+    final Color activeColor = _timerColor(elapsedMilliseconds);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: timerState.isRunning
+            ? AppColors.surfaceLight
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: timerState.isRunning ? activeColor : AppColors.border,
+          width: timerState.isRunning ? 1.6 : 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            'Rest timer',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          Text(
+            timerState.isRunning ? 'Rest timer running' : 'Rest timer',
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 12),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              _formattedTime(),
+              _formattedTime(elapsedMilliseconds),
               style: TextStyle(
-                fontSize: 84,
+                fontSize: 76,
                 fontWeight: FontWeight.w800,
                 color: activeColor,
                 height: 1,
@@ -174,8 +55,8 @@ class _RoutineTimerCardState extends State<RoutineTimerCard> {
             children: [
               Expanded(
                 child: _TimerButton(
-                  label: 'Start',
-                  onPressed: _startTimer,
+                  label: timerState.isRunning ? 'Running' : 'Start',
+                  onPressed: timerState.isRunning ? null : timerNotifier.start,
                   backgroundColor: AppColors.accent,
                   foregroundColor: Colors.black,
                 ),
@@ -184,8 +65,8 @@ class _RoutineTimerCardState extends State<RoutineTimerCard> {
               Expanded(
                 child: _TimerButton(
                   label: 'Stop',
-                  onPressed: _stopTimer,
-                  backgroundColor: AppColors.surfaceLight,
+                  onPressed: timerNotifier.stop,
+                  backgroundColor: AppColors.surface,
                   foregroundColor: AppColors.textPrimary,
                 ),
               ),
@@ -193,8 +74,8 @@ class _RoutineTimerCardState extends State<RoutineTimerCard> {
               Expanded(
                 child: _TimerButton(
                   label: 'Reset',
-                  onPressed: _resetTimer,
-                  backgroundColor: AppColors.surfaceLight,
+                  onPressed: timerNotifier.reset,
+                  backgroundColor: AppColors.surface,
                   foregroundColor: AppColors.textPrimary,
                 ),
               ),
@@ -204,11 +85,36 @@ class _RoutineTimerCardState extends State<RoutineTimerCard> {
       ),
     );
   }
+
+  Color _timerColor(int elapsedMilliseconds) {
+    final int elapsedSeconds = elapsedMilliseconds ~/ 1000;
+
+    if (elapsedSeconds < 90) {
+      return AppColors.timerRed;
+    }
+
+    if (elapsedSeconds < 180) {
+      return AppColors.timerYellow;
+    }
+
+    return AppColors.timerGreen;
+  }
+
+  String _formattedTime(int elapsedMilliseconds) {
+    final int totalSeconds = elapsedMilliseconds ~/ 1000;
+    final int minutes = totalSeconds ~/ 60;
+    final int seconds = totalSeconds % 60;
+    final int deciseconds = (elapsedMilliseconds % 1000) ~/ 100;
+
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}.'
+        '$deciseconds';
+  }
 }
 
 class _TimerButton extends StatelessWidget {
   final String label;
-  final Future<void> Function() onPressed;
+  final Future<void> Function()? onPressed;
   final Color backgroundColor;
   final Color foregroundColor;
 
@@ -221,16 +127,24 @@ class _TimerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDisabled = onPressed == null;
+
     return SizedBox(
       height: 46,
       child: ElevatedButton(
-        onPressed: () async {
-          await onPressed();
-        },
+        onPressed: onPressed == null
+            ? null
+            : () async {
+                await onPressed!();
+              },
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          backgroundColor: backgroundColor,
-          foregroundColor: foregroundColor,
+          backgroundColor: isDisabled ? AppColors.completed : backgroundColor,
+          foregroundColor: isDisabled
+              ? AppColors.textSecondary
+              : foregroundColor,
+          disabledBackgroundColor: AppColors.completed,
+          disabledForegroundColor: AppColors.textSecondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
