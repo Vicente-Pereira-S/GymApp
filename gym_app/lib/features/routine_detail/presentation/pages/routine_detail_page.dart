@@ -20,14 +20,35 @@ class RoutineDetailPage extends ConsumerWidget {
     );
   }
 
+  Future<void> _handleRoutineCompleted(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return const _RoutineCompletedDialog();
+      },
+    );
+
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    if (!context.mounted) {
+      return;
+    }
+
+    Navigator.of(context).pop(); // close dialog
+    Navigator.of(context).pop(); // back to home
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(workoutStateProvider);
+
     final workoutNotifier = ref.read(workoutStateProvider.notifier);
 
     final pendingExercises = workoutNotifier.pendingExercisesForRoutine(
       routine,
     );
+
     final completedExercises = workoutNotifier.completedExercisesForRoutine(
       routine,
     );
@@ -37,9 +58,9 @@ class RoutineDetailPage extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: const RoutineTimerCard(),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: RoutineTimerCard(),
             ),
             Expanded(
               child: ListView(
@@ -57,10 +78,9 @@ class RoutineDetailPage extends ConsumerWidget {
                                     child: ExerciseListItem(
                                       exercise: exercise,
                                       isCompleted: false,
-                                      onTap: () => _openExerciseDetail(
-                                        context,
-                                        exercise,
-                                      ),
+                                      onTap: () {
+                                        _openExerciseDetail(context, exercise);
+                                      },
                                       onChanged: (_) async {
                                         workoutNotifier.setExerciseCompleted(
                                           routineId: routine.id,
@@ -75,14 +95,8 @@ class RoutineDetailPage extends ConsumerWidget {
                                                 );
 
                                         if (completed && context.mounted) {
-                                          ScaffoldMessenger.of(
+                                          await _handleRoutineCompleted(
                                             context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                '${routine.name} completed',
-                                              ),
-                                            ),
                                           );
                                         }
                                       },
@@ -107,10 +121,9 @@ class RoutineDetailPage extends ConsumerWidget {
                                     child: ExerciseListItem(
                                       exercise: exercise,
                                       isCompleted: true,
-                                      onTap: () => _openExerciseDetail(
-                                        context,
-                                        exercise,
-                                      ),
+                                      onTap: () {
+                                        _openExerciseDetail(context, exercise);
+                                      },
                                       onChanged: (_) {
                                         workoutNotifier.setExerciseCompleted(
                                           routineId: routine.id,
@@ -126,6 +139,46 @@ class RoutineDetailPage extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoutineCompletedDialog extends StatelessWidget {
+  const _RoutineCompletedDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.timerGreen,
+              size: 64,
+            ),
+            SizedBox(height: 18),
+            Text(
+              'Routine completed',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Great work today.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
           ],
         ),

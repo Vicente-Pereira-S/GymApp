@@ -26,26 +26,23 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
     await NotificationService.scheduleThreeMinuteAlert();
   }
 
-  Future<void> stop() async {
-    if (state.isRunning) {
-      state = state.copyWith(
-        isRunning: false,
-        accumulatedMilliseconds: state.elapsedMilliseconds(),
-        clearStartedAt: true,
-      );
-    }
-
-    _stopTicker();
-
-    await NotificationService.cancelThreeMinuteAlert();
-  }
-
   Future<void> reset() async {
     state = RestTimerState.initial();
 
     _stopTicker();
 
     await NotificationService.cancelThreeMinuteAlert();
+  }
+
+  Future<void> restart() async {
+    state = RestTimerState.initial().copyWith(
+      isRunning: true,
+      startedAt: DateTime.now(),
+    );
+
+    _startTicker();
+
+    await NotificationService.scheduleThreeMinuteAlert();
   }
 
   void _startTicker() {

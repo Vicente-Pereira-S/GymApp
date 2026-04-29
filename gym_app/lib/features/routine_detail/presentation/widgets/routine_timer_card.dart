@@ -64,8 +64,8 @@ class RoutineTimerCard extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _TimerButton(
-                  label: 'Stop',
-                  onPressed: timerNotifier.stop,
+                  label: 'Reset',
+                  onPressed: timerNotifier.reset,
                   backgroundColor: AppColors.surface,
                   foregroundColor: AppColors.textPrimary,
                 ),
@@ -73,8 +73,8 @@ class RoutineTimerCard extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _TimerButton(
-                  label: 'Reset',
-                  onPressed: timerNotifier.reset,
+                  label: 'Restart',
+                  onPressed: timerNotifier.restart,
                   backgroundColor: AppColors.surface,
                   foregroundColor: AppColors.textPrimary,
                 ),
