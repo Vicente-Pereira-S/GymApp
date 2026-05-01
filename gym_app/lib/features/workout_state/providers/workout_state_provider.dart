@@ -36,7 +36,8 @@ class WorkoutStateNotifier extends StateNotifier<WorkoutState> {
     return state.exerciseDrafts[exercise.id] ??
         ExerciseDraftData(
           sets: exercise.defaultSets,
-          reps: exercise.defaultReps,
+          repsMin: exercise.defaultRepsMin,
+          repsMax: exercise.defaultRepsMax,
           weightKg: null,
           permanentNote: exercise.permanentNote,
         );
@@ -103,7 +104,8 @@ class WorkoutStateNotifier extends StateNotifier<WorkoutState> {
   Future<void> updateExerciseDraft({
     required Exercise exercise,
     int? sets,
-    int? reps,
+    int? repsMin,
+    int? repsMax,
     double? weightKg,
     String? permanentNote,
   }) async {
@@ -113,7 +115,8 @@ class WorkoutStateNotifier extends StateNotifier<WorkoutState> {
       ...state.exerciseDrafts,
       exercise.id: current.copyWith(
         sets: sets,
-        reps: reps,
+        repsMin: repsMin,
+        repsMax: repsMax,
         weightKg: weightKg,
         permanentNote: permanentNote,
       ),

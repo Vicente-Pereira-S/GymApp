@@ -4,6 +4,7 @@ import 'package:gym_app/domain/entities/exercise.dart';
 
 class ExerciseListItem extends StatelessWidget {
   final Exercise exercise;
+  final String workoutDataText;
   final bool isCompleted;
   final VoidCallback onTap;
   final ValueChanged<bool?> onChanged;
@@ -11,6 +12,7 @@ class ExerciseListItem extends StatelessWidget {
   const ExerciseListItem({
     super.key,
     required this.exercise,
+    required this.workoutDataText,
     required this.isCompleted,
     required this.onTap,
     required this.onChanged,
@@ -68,7 +70,7 @@ class ExerciseListItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${exercise.defaultSets} x ${exercise.defaultReps} reps',
+                        workoutDataText,
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,

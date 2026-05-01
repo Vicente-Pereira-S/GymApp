@@ -5,7 +5,8 @@ class Exercise {
   final String assetPath;
   final String permanentNote;
   final int defaultSets;
-  final int defaultReps;
+  final int defaultRepsMin;
+  final int defaultRepsMax;
   final int orderIndex;
 
   const Exercise({
@@ -15,7 +16,8 @@ class Exercise {
     required this.assetPath,
     required this.permanentNote,
     required this.defaultSets,
-    required this.defaultReps,
+    required this.defaultRepsMin,
+    required this.defaultRepsMax,
     required this.orderIndex,
   });
 
@@ -24,7 +26,8 @@ class Exercise {
     String? assetPath,
     String? permanentNote,
     int? defaultSets,
-    int? defaultReps,
+    int? defaultRepsMin,
+    int? defaultRepsMax,
     int? orderIndex,
   }) {
     return Exercise(
@@ -34,7 +37,8 @@ class Exercise {
       assetPath: assetPath ?? this.assetPath,
       permanentNote: permanentNote ?? this.permanentNote,
       defaultSets: defaultSets ?? this.defaultSets,
-      defaultReps: defaultReps ?? this.defaultReps,
+      defaultRepsMin: defaultRepsMin ?? this.defaultRepsMin,
+      defaultRepsMax: defaultRepsMax ?? this.defaultRepsMax,
       orderIndex: orderIndex ?? this.orderIndex,
     );
   }

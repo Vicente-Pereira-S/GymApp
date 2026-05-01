@@ -20,6 +20,12 @@ class RoutineDetailPage extends ConsumerWidget {
     );
   }
 
+  String _workoutDataText(dynamic workoutNotifier, Exercise exercise) {
+    final draft = workoutNotifier.getDraftForExercise(exercise);
+
+    return '${draft.sets} x ${draft.repsMin}-${draft.repsMax} reps';
+  }
+
   Future<void> _handleRoutineCompleted(BuildContext context) async {
     showDialog(
       context: context,
@@ -77,6 +83,10 @@ class RoutineDetailPage extends ConsumerWidget {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: ExerciseListItem(
                                       exercise: exercise,
+                                      workoutDataText: _workoutDataText(
+                                        workoutNotifier,
+                                        exercise,
+                                      ),
                                       isCompleted: false,
                                       onTap: () {
                                         _openExerciseDetail(context, exercise);
@@ -120,6 +130,10 @@ class RoutineDetailPage extends ConsumerWidget {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: ExerciseListItem(
                                       exercise: exercise,
+                                      workoutDataText: _workoutDataText(
+                                        workoutNotifier,
+                                        exercise,
+                                      ),
                                       isCompleted: true,
                                       onTap: () {
                                         _openExerciseDetail(context, exercise);

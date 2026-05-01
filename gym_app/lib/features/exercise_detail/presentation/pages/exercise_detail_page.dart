@@ -18,7 +18,8 @@ class ExerciseDetailPage extends ConsumerStatefulWidget {
 
 class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
   late final TextEditingController _setsController;
-  late final TextEditingController _repsController;
+  late final TextEditingController _repsMinController;
+  late final TextEditingController _repsMaxController;
   late final TextEditingController _weightController;
   late final TextEditingController _noteController;
   late final FocusNode _noteFocusNode;
@@ -32,7 +33,8 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
         .getDraftForExercise(widget.exercise);
 
     _setsController = TextEditingController(text: draft.sets.toString());
-    _repsController = TextEditingController(text: draft.reps.toString());
+    _repsMinController = TextEditingController(text: draft.repsMin.toString());
+    _repsMaxController = TextEditingController(text: draft.repsMax.toString());
     _weightController = TextEditingController(
       text: draft.weightKg?.toString() ?? '',
     );
@@ -40,13 +42,15 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
     _noteFocusNode = FocusNode();
 
     _setsController.addListener(_saveNumericDraft);
-    _repsController.addListener(_saveNumericDraft);
+    _repsMinController.addListener(_saveNumericDraft);
+    _repsMaxController.addListener(_saveNumericDraft);
     _weightController.addListener(_saveNumericDraft);
   }
 
   void _saveNumericDraft() {
     final int? parsedSets = int.tryParse(_setsController.text);
-    final int? parsedReps = int.tryParse(_repsController.text);
+    final int? parsedRepsMin = int.tryParse(_repsMinController.text);
+    final int? parsedRepsMax = int.tryParse(_repsMaxController.text);
     final double? parsedWeight = _parseWeight(_weightController.text);
 
     final draft = ref
@@ -58,7 +62,8 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
         .updateExerciseDraft(
           exercise: widget.exercise,
           sets: parsedSets ?? draft.sets,
-          reps: parsedReps ?? draft.reps,
+          repsMin: parsedRepsMin ?? draft.repsMin,
+          repsMax: parsedRepsMax ?? draft.repsMax,
           weightKg: parsedWeight,
         );
   }
@@ -95,11 +100,13 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
   @override
   void dispose() {
     _setsController.removeListener(_saveNumericDraft);
-    _repsController.removeListener(_saveNumericDraft);
+    _repsMinController.removeListener(_saveNumericDraft);
+    _repsMaxController.removeListener(_saveNumericDraft);
     _weightController.removeListener(_saveNumericDraft);
 
     _setsController.dispose();
-    _repsController.dispose();
+    _repsMinController.dispose();
+    _repsMaxController.dispose();
     _weightController.dispose();
     _noteController.dispose();
     _noteFocusNode.dispose();
@@ -130,7 +137,8 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
               const SizedBox(height: 16),
               ExerciseInputsRow(
                 setsController: _setsController,
-                repsController: _repsController,
+                repsMinController: _repsMinController,
+                repsMaxController: _repsMaxController,
                 weightController: _weightController,
               ),
               const SizedBox(height: 16),
