@@ -12,6 +12,7 @@ class RoutineTimerCard extends ConsumerWidget {
     final timerNotifier = ref.read(restTimerProvider.notifier);
 
     final int elapsedMilliseconds = timerState.elapsedMilliseconds();
+    final bool isAtZero = elapsedMilliseconds == 0 && !timerState.isRunning;
     final Color activeColor = _timerColor(elapsedMilliseconds);
 
     return Container(
@@ -64,19 +65,19 @@ class RoutineTimerCard extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _TimerButton(
-                  label: 'Reset',
-                  onPressed: timerNotifier.reset,
-                  backgroundColor: AppColors.surface,
-                  foregroundColor: AppColors.textPrimary,
+                  label: 'Restart',
+                  onPressed: isAtZero ? null : timerNotifier.restart,
+                  backgroundColor: AppColors.timerYellow,
+                  foregroundColor: Colors.black,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _TimerButton(
-                  label: 'Restart',
-                  onPressed: timerNotifier.restart,
-                  backgroundColor: AppColors.surface,
-                  foregroundColor: AppColors.textPrimary,
+                  label: 'Reset',
+                  onPressed: isAtZero ? null : timerNotifier.reset,
+                  backgroundColor: AppColors.timerRed,
+                  foregroundColor: Colors.black,
                 ),
               ),
             ],
@@ -132,7 +133,7 @@ class _TimerButton extends StatelessWidget {
     return SizedBox(
       height: 46,
       child: ElevatedButton(
-        onPressed: onPressed == null
+        onPressed: isDisabled
             ? null
             : () async {
                 await onPressed!();

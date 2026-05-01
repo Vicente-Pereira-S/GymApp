@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gym_app/app/theme/app_colors.dart';
 
 class RecommendedRoutineBanner extends StatelessWidget {
   final String recommendedRoutineName;
